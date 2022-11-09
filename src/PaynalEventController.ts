@@ -1,11 +1,8 @@
 import EventEmitter from 'EventEmitter'
 import { MiddlewareCommands } from '$/models/MiddlewareCommands.ts'
-import { Middleware } from "../@types/middleware.d.ts";
 
 export abstract class PaynalEventController extends EventEmitter {
-    constructor(
-        readonly middlewares: Map<MiddlewareCommands, Middleware[]> = new Map(),
-    ) { super() }
+    private middlewares: Map<MiddlewareCommands, Middleware[]> = new Map<MiddlewareCommands, Middleware[]>()
 
     public addMiddleware(command: MiddlewareCommands, handler: Middleware): void {
         if (!this.middlewares.get(command)) this.middlewares.set(command, [])
