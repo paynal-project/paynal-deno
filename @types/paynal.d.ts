@@ -6,14 +6,15 @@ interface ClientHeartbeat {
 }
 
 interface IPaynalSocket {
-    readonly sessionId: string
+    sessionId: string
     heartbeatClock?: number
     heartbeatTime: number
     clientHeartbeat: ClientHeartbeat
-
-    on(event: string, listener: (data: string, isBinary: boolean) => void): WebSocket
+    onMessage: (callback: (payload: string) => void) => void
+    onClose: (callback: () => void) => void
+    onError: (callback: (error: string) => void) => void
     // TODO: Fix frame type
-    sendFrame(frame: any): void
-    send(payload: any): void
-    close(): void
+    sendFrame: (frame: any) => void
+    send: (payload: any) => void
+    close: () => void
 }
