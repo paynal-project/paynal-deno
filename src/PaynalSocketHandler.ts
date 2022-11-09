@@ -33,6 +33,7 @@ export class PaynalSocketHandler extends EventEmitter {
         const frame = Frame.fromString(payload)
 
         switch (frame.command) {
+            case 'STOMP':
             case 'CONNECT': return this.connect(socket, frame)
             case 'DISCONNECT': return this.disconnect(socket, frame)
             case 'SUBSCRIBE': return this.subscribe(socket, frame)
