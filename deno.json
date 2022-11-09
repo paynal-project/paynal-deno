@@ -1,0 +1,14 @@
+{
+    "tasks": {
+        "start": "deno run --allow-sys main.ts",
+        "test": "deno test --allow-sys"
+    },
+    "importMap": "./import_map.json",
+    "compilerOptions": {
+        "types": [
+            "./@types/paynal.d.ts",
+            "./@types/middleware.d.ts",
+            "./@types/subscriber.d.ts"
+        ]
+    }
+}
