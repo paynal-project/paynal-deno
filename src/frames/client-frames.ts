@@ -1,6 +1,7 @@
 import { connect } from '$/frames/client/connect.ts'
 import { stomp } from '$/frames/client/stomp.ts'
 import { send } from '$/frames/client/send.ts'
+import { json } from '$/frames/client/json.ts'
 import { subscribe } from '$/frames/client/subscribe.ts'
 import { unsubscribe } from '$/frames/client/unsubscribe.ts'
 import { begin } from '$/frames/client/begin.ts'
@@ -14,6 +15,7 @@ export const CLIENT_FRAMES = {
     connect,
     stomp,
     send,
+    json,
     subscribe,
     unsubscribe,
     begin,
