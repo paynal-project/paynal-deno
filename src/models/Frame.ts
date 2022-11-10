@@ -1,4 +1,3 @@
-import { cuid } from "cuid"
 import { Break, Null } from '$/utils/bytes.ts'
 import { trimNull } from '$/utils/trimNull.ts'
 
