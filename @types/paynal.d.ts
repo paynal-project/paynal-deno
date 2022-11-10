@@ -10,6 +10,7 @@ interface IPaynalSocket {
     heartbeatClock?: number
     heartbeatTime: number
     clientHeartbeat: ClientHeartbeat
+    isLogin: boolean = false
     onMessage: (callback: (payload: string) => void) => void
     onClose: (callback: () => void) => void
     onError: (callback: (error: string) => void) => void
