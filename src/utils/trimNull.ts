@@ -1,7 +1,7 @@
-import { Null } from "./bytes.ts"
+import { Null, Break } from "$/utils/bytes.ts"
 
 export const trimNull = (payload: string): string => {
-    const c = payload.indexOf(Null)
-    if (c > -1) return payload.slice(0, c)
+    payload = payload.replaceAll(Null, '')
+    payload = payload.replaceAll(Break, '')
     return payload
 }
