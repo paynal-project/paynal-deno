@@ -7,16 +7,7 @@ export class Frame {
         readonly command: string,
         readonly headers: PaynalHeaders,
         readonly body?: string,
-        readonly wantReceipt: boolean = false
-    ) {
-        if (wantReceipt)
-            /**
-             * Todo: Revisar si es necesario tener session
-             * para pedir un resivo
-             */
-            // if (this.headers.session)
-            this.headers.receipt = `${cuid()}-${this.headers.session}`
-    }
+    ) { }
 
     public static fromString(payload: string): Frame {
         const [commandAndHeaders, rawBody] = payload.split(`${Break}${Break}`)
