@@ -2,7 +2,7 @@ import EventEmitter from 'EventEmitter'
 import { Frame } from '$/models/Frame.ts'
 import { Break } from '$/utils/bytes.ts'
 import { SERVER_FRAMES } from '$/frames/server-frames.ts'
-import { ServerConfig } from '$/models/ServerConfig.ts'
+import { DefaultServerConfig } from '$/models/ServerConfig.ts'
 
 export enum PaynalSocketHandlerEvents {
     onClientConnected = 'onClientConnected',
@@ -11,12 +11,13 @@ export enum PaynalSocketHandlerEvents {
     onUnsubscribeClient = 'onUnsubscribeClient',
     onSendClient = 'onSendClient',
     onHeartbeatOn = 'onHeartbeatOn',
+    onError = 'onError',
 }
 
 export class PaynalSocketHandler extends EventEmitter {
 
     constructor(
-        private readonly serverConfig = ServerConfig
+        private readonly serverConfig = DefaultServerConfig
     ) { super() }
 
     public listenSocketMessage(socket: IPaynalSocket, payload: string): void {
@@ -31,6 +32,11 @@ export class PaynalSocketHandler extends EventEmitter {
         }
 
         const frame = Frame.fromString(payload)
+
+        if (frame.command != 'STOMP' && frame.command != 'CONNECT' && !socket.isLogin) {
+            this.emit(PaynalSocketHandlerEvents.onError, socket, 'Not logged in yet', 'not logged in yet', frame)
+            return
+        }
 
         switch (frame.command) {
             case 'STOMP':
@@ -56,12 +62,21 @@ export class PaynalSocketHandler extends EventEmitter {
     listen(event: PaynalSocketHandlerEvents.onUnsubscribeClient, listener: (socket: IPaynalSocket, id: string) => void): void
     listen(event: PaynalSocketHandlerEvents.onSendClient, listener: (socket: IPaynalSocket, destination: string, frame: Frame, callback?: (boolean: boolean) => void) => void): void
     listen(event: PaynalSocketHandlerEvents.onHeartbeatOn, listener: (socket: IPaynalSocket, intervalTime: number, serverSide: boolean) => void): void
+    listen(event: PaynalSocketHandlerEvents.onError, listener: (socket: IPaynalSocket, message: string, description: string, frame: Frame) => void): void
     // deno-lint-ignore ban-types
     listen(event: PaynalSocketHandlerEvents, listener: Function): void {
         this.on(event, listener);
     }
 
     protected connect(socket: IPaynalSocket, frame: Frame) {
+        if (
+            frame.headers.login != this.serverConfig.credentials.user
+            || frame.headers.passcode != this.serverConfig.credentials.password
+        ) {
+            this.emit(PaynalSocketHandlerEvents.onError, socket, 'Incorrect Credentials', 'user or password error', frame)
+            return
+        }
+
         const rawHeartbeat = frame.headers['heart-beat']
         let clientHeartbeat = [0, 0]
         if (rawHeartbeat) {
@@ -80,7 +95,12 @@ export class PaynalSocketHandler extends EventEmitter {
         }
         this.emit(PaynalSocketHandlerEvents.onClientConnected, socket, frame.headers, clientHeartbeat)
         const connectedFrame = SERVER_FRAMES.connected(socket.sessionId, clientHeartbeat.join(','), this.serverConfig.serverName)
+        socket.isLogin = true
         socket.sendFrame(connectedFrame)
+        const receipt = frame.headers.receipt as string
+        if (!receipt) return
+        const receipFrame = SERVER_FRAMES.receip(receipt)
+        socket.sendFrame(receipFrame)
     }
 
     protected disconnect(socket: IPaynalSocket, frame: Frame) {
@@ -107,19 +127,18 @@ export class PaynalSocketHandler extends EventEmitter {
     }
 
     protected send(socket: IPaynalSocket, frame: Frame) {
-        if (!frame.headers.destination)
-            return socket.sendFrame(
-                SERVER_FRAMES.error(
-                    'Header destination is required',
-                    `Header destination not found:\n-----\n${frame.toString()}\n-----`
-                )
-            )
+        if (!frame.headers.destination) {
+            this.emit(PaynalSocketHandlerEvents.onError, socket, 'Header destination is required',
+                `Header destination not found:\n-----\n${frame.toString()}\n-----`, frame)
+            return
+        }
         const destination = frame.headers.destination as string
         this.emit(PaynalSocketHandlerEvents.onSendClient, socket, destination, frame, (res: boolean) => {
             const receip = frame.headers.receipt
             if (res && receip)
                 return socket.sendFrame(SERVER_FRAMES.receip(receip as string))
-            if (!res) socket.sendFrame(SERVER_FRAMES.error('Send error', frame.toString()))
+            if (!res)
+                this.emit(PaynalSocketHandlerEvents.onError, socket, 'error', frame.toString(), frame)
         })
     }
 }
