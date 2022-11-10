@@ -5,19 +5,27 @@ import { SERVER_FRAMES } from '$/frames/server-frames.ts'
 import { tokenizeDestination } from '$/utils/tokenizeDestination.ts'
 import { checkSubMatchDestination } from '$/utils/checkSubMatchDestination.ts'
 import { MiddlewareCommands } from '$/models/MiddlewareCommands.ts'
-import { ServerConfig } from '$/models/ServerConfig.ts'
+import { DefaultServerConfig, IServerConfig, IServerConfigOptionals } from '$/models/ServerConfig.ts'
 import { PaynalSocketHandler, PaynalSocketHandlerEvents } from '$/PaynalSocketHandler.ts'
 import { PaynalEventController } from './PaynalEventController.ts'
 
 export class PaynalServer extends PaynalEventController {
-
+    private readonly serverConfig: IServerConfig
     constructor(
-        private readonly serverConfig = ServerConfig,
+        serverConfig?: IServerConfigOptionals,
         private readonly selfSocket = { sessionId: `paynal__${cuid()}` } as IPaynalSocket,
         private subscribers: Subscriber[] = [],
-        private readonly paynalSocketHandler: PaynalSocketHandler = new PaynalSocketHandler(serverConfig),
+        private readonly paynalSocketHandler = new PaynalSocketHandler({
+            ...DefaultServerConfig,
+            ...serverConfig,
+        } as IServerConfig),
     ) {
         super()
+        this.serverConfig = {
+            ...DefaultServerConfig,
+            ...serverConfig,
+        } as IServerConfig
+
         this.paynalSocketHandler.listen(PaynalSocketHandlerEvents.onClientConnected,
             (socket, headers, heartbeat) => this.onClientConnected(socket, headers, heartbeat))
         this.paynalSocketHandler.listen(PaynalSocketHandlerEvents.onDisconnectClient,
@@ -30,6 +38,8 @@ export class PaynalServer extends PaynalEventController {
             (socket, topic, frame, callback) => this.onSendClient(socket, topic, frame, callback))
         this.paynalSocketHandler.listen(PaynalSocketHandlerEvents.onHeartbeatOn,
             (socket, intervalTime, serverSide) => this.heartbeatOn(socket, intervalTime, serverSide))
+        this.paynalSocketHandler.listen(PaynalSocketHandlerEvents.onError,
+            (socket, message, description, frame) => this.onError(socket, message, description, frame))
     }
 
     public register(socket: IPaynalSocket): void {
@@ -136,13 +146,19 @@ export class PaynalServer extends PaynalEventController {
         withMiddleware(socket, undefined)
     }
 
+    protected onError(socket: IPaynalSocket, message: string, description: string, frame: Frame) {
+        const errorFrame = SERVER_FRAMES.error(message, description)
+        const receipt = frame.headers.receipt
+        if (receipt) errorFrame.headers['receipt-id'] = receipt
+        return socket.sendFrame(errorFrame)
+    }
+
     protected afterConnectionClose(socket: IPaynalSocket) {
         this.subscribers = this.subscribers
             .filter(subscriber =>
                 subscriber.sessionId !== socket.sessionId)
         this.heartbeatOff(socket)
     }
-
 
     protected heartbeatOff(socket: IPaynalSocket) {
         if (!socket.heartbeatClock) return
