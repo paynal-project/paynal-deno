@@ -46,12 +46,13 @@ export class PaynalSocketHandler extends EventEmitter {
             case 'UNSUBSCRIBE': return this.unsubscribe(socket, frame)
             case 'SEND': return this.send(socket, frame)
             default: {
-                const errorFrame = SERVER_FRAMES.error(
+                this.emit(
+                    PaynalSocketHandlerEvents.onError,
+                    socket,
                     'Command not found',
-                    `Command not found: ${Break}-----${Break}${frame.command}${Break}-----`
+                    `Command not found: ${Break}-----${Break}${frame.command}${Break}-----`,
+                    frame
                 )
-                socket.sendFrame(errorFrame)
-                break;
             }
         }
     }
