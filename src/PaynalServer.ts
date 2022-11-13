@@ -7,7 +7,7 @@ import { checkSubMatchDestination } from '$/utils/checkSubMatchDestination.ts'
 import { MiddlewareCommands } from '$/models/MiddlewareCommands.ts'
 import { DefaultServerConfig, IServerConfig, IServerConfigOptionals } from '$/models/ServerConfig.ts'
 import { PaynalSocketHandler, PaynalSocketHandlerEvents } from '$/PaynalSocketHandler.ts'
-import { PaynalEventController } from './PaynalEventController.ts'
+import { PaynalEventController } from "$/PaynalEventController.ts"
 
 export class PaynalServer extends PaynalEventController {
     private readonly serverConfig: IServerConfig
