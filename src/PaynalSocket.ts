@@ -3,18 +3,8 @@ import { Frame } from '$/models/Frame.ts'
 import { CLIENT_FRAMES } from '$/frames/client-frames.ts'
 import { cuid } from 'https://deno.land/x/cuid@v1.0.0/index.js';
 
-abstract class PaynalSocketBase extends EventEmitter {
+export class PaynalSocket extends EventEmitter {
     protected readonly ws: WebSocket
-
-    constructor(
-        readonly url: string
-    ) {
-        super();
-        this.ws = new WebSocket(url)
-    }
-}
-
-export class PaynalSocket extends PaynalSocketBase {
     private _isLogin = false
     private _session = 'paynal-anonymous-00'
     private _server = ''
@@ -23,7 +13,8 @@ export class PaynalSocket extends PaynalSocketBase {
     constructor(
         readonly url: string,
     ) {
-        super(url)
+        super();
+        this.ws = new WebSocket(url)
         this.ws.onmessage = (payload) => this.listener(payload.data)
     }
 
